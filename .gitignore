@@ -1,0 +1,25 @@
+# IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Target
+target/
+build/
+
+# Logs
+logs/
+*.log
+
+# Banco H2 (dados temporários)
+*.db
+*.trace.db
+
+# Arquivos temporários
+*.tmp
+*.temp
+
+# Sistema
+.DS_Store
+Thumbs.db
