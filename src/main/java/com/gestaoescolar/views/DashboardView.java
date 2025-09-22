@@ -1,13 +1,16 @@
 package com.gestaoescolar.views;
 
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
-@Route(value = "", layout = MainView.class)  // Rota principal
+@Route(value = "", layout = MainView.class)
 @PageTitle("Dashboard | Gestão Escolar")
 public class DashboardView extends VerticalLayout {
 
@@ -54,6 +57,13 @@ public class DashboardView extends VerticalLayout {
                 .set("padding", "1.5rem")
                 .set("border-radius", "var(--lumo-border-radius)");
 
-        add(titulo, subtitulo, descricao, estatisticas);
+        // BOTÃO DE ADMINISTRAÇÃO - VERSÃO CORRIGIDA
+        Button adminButton = new Button("Acessar Administração",
+                new Icon(VaadinIcon.COG));
+        adminButton.addClickListener(e -> {
+            getUI().ifPresent(ui -> ui.navigate("admin/ano-letivo"));
+        });
+
+        add(titulo, subtitulo, descricao, estatisticas, adminButton);
     }
 }
