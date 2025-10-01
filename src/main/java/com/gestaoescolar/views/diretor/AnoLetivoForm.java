@@ -1,4 +1,4 @@
-package com.gestaoescolar.views.admin;
+package com.gestaoescolar.views.diretor;
 
 import com.gestaoescolar.model.AnoLetivo;
 import com.gestaoescolar.model.enums.StatusAnoLetivo;
@@ -9,7 +9,6 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
-import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;

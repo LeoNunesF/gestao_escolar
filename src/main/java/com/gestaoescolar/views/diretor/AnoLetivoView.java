@@ -1,4 +1,4 @@
-package com.gestaoescolar.views.admin;
+package com.gestaoescolar.views.diretor;
 
 import com.gestaoescolar.model.AnoLetivo;
 import com.gestaoescolar.service.AnoLetivoService;
@@ -13,7 +13,11 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
-@Route(value = "admin/ano-letivo") // Removi o layout = MainView.class
+
+import com.gestaoescolar.views.shared.MainLayout;
+
+
+@Route(value = "diretor/ano-letivo", layout = MainLayout.class) // ← Adicionar layout
 @PageTitle("Ano Letivo | Gestão Escolar")
 public class AnoLetivoView extends VerticalLayout {
 

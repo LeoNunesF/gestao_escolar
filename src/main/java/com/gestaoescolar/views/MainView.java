@@ -1,5 +1,6 @@
 package com.gestaoescolar.views;
 
+import com.gestaoescolar.views.shared.DashboardView;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
