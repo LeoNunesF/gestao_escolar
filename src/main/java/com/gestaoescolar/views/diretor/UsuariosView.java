@@ -108,7 +108,7 @@ public class UsuariosView extends VerticalLayout {
         }).setHeader("Ativo").setAutoWidth(true);
 
         // Coluna de data de criação
-        grid.addColumn(usuario -> usuario.getDataCriacao().toLocalDate().toString())
+        grid.addColumn(Usuario::getDataCriacaoFormatada)
                 .setHeader("Data Criação")
                 .setAutoWidth(true)
                 .setSortable(true);

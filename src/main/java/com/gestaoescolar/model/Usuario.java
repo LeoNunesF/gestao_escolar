@@ -102,4 +102,27 @@ public class Usuario {
     public String toString() {
         return nomeCompleto + " (" + login + ")";
     }
+    public String getDataCriacaoFormatada() {
+        if (dataCriacao != null) {
+            return String.format("%02d/%02d/%d %02d:%02d",
+                    dataCriacao.getDayOfMonth(),
+                    dataCriacao.getMonthValue(),
+                    dataCriacao.getYear(),
+                    dataCriacao.getHour(),
+                    dataCriacao.getMinute());
+        }
+        return "";
+    }
+
+    public String getUltimoAcessoFormatado() {
+        if (ultimoAcesso != null) {
+            return String.format("%02d/%02d/%d %02d:%02d",
+                    ultimoAcesso.getDayOfMonth(),
+                    ultimoAcesso.getMonthValue(),
+                    ultimoAcesso.getYear(),
+                    ultimoAcesso.getHour(),
+                    ultimoAcesso.getMinute());
+        }
+        return "Nunca acessou";
+    }
 }
