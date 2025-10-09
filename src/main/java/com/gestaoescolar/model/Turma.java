@@ -58,7 +58,21 @@ public class Turma {
 
     private Integer vagasDisponiveis;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "professor_titular_id")
+    private Professor professorTitular;
+
     // Construtores
+
+    public Professor getProfessorTitular() {
+        return professorTitular;
+    }
+
+    public void setProfessorTitular(Professor professorTitular) {
+        this.professorTitular = professorTitular;
+    }
+
+
     public Turma() {}
 
     public Turma(String nomeTurma, Serie serie, Turno turno, AnoLetivo anoLetivo) {

@@ -14,7 +14,7 @@ import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.router.RouterLink;
 
-public class MainView extends AppLayout {
+public class clsMainView extends AppLayout {
 
     public MainView() {
         createHeader();
