@@ -15,6 +15,9 @@ import java.util.Optional;
 
 @Repository
 public interface TurmaRepository extends JpaRepository<Turma, Long> {
+    // colocar ano letivo na grid
+    @Query("SELECT t FROM Turma t JOIN FETCH t.anoLetivo")
+    List<Turma> listarTodasComAnoLetivo();
 
     // Buscar turmas por ano letivo
     List<Turma> findByAnoLetivo(AnoLetivo anoLetivo);

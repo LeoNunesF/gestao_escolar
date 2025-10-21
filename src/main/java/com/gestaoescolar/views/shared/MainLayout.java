@@ -2,6 +2,7 @@ package com.gestaoescolar.views.shared;
 
 import com.gestaoescolar.model.Usuario;
 import com.gestaoescolar.model.enums.PerfilUsuario;
+import com.gestaoescolar.views.diretor.TurmasView;
 import com.gestaoescolar.service.auth.AuthService;
 import com.gestaoescolar.views.diretor.AnoLetivoView;
 import com.gestaoescolar.views.diretor.UsuariosView;
@@ -65,7 +66,7 @@ public class MainLayout extends AppLayout {
         if (usuarioLogado != null && usuarioLogado.isDiretor()) {
             tabs.add(criarTab(VaadinIcon.CALENDAR, "Anos Letivos", AnoLetivoView.class));
             tabs.add(criarTab(VaadinIcon.USER, "Gestão de Usuários", UsuariosView.class));
-            tabs.add(criarTabPlaceholder(VaadinIcon.GROUP, "Turmas"));
+            tabs.add(criarTab(VaadinIcon.GROUP, "Turmas", TurmasView.class));
         }
 
         if (usuarioLogado != null) {
@@ -85,27 +86,10 @@ public class MainLayout extends AppLayout {
         link.setRoute(viewClass);
         link.setTabIndex(-1);
         return new Tab(link);
+        //tabs.add(criarTab(VaadinIcon.GROUP, "Turmas", TurmasView.class));
     }
 
-    private Tab criarTabPlaceholder(VaadinIcon icon, String titulo) {
-        Icon icone = icon.create();
-        Span texto = new Span(titulo);
 
-        HorizontalLayout content = new HorizontalLayout(icone, texto);
-        content.setAlignItems(FlexComponent.Alignment.CENTER);
-        content.setSpacing(true);
-
-        content.addClickListener(event -> {
-            getUI().ifPresent(ui -> ui.getPage().executeJs(
-                    "alert('Funcionalidade em desenvolvimento!');"
-            ));
-        });
-
-        content.getStyle().set("cursor", "pointer")
-                .set("padding", "var(--lumo-space-s)");
-
-        return new Tab(content);
-    }
 
     private Tab criarTabLogout() {
         Icon icone = VaadinIcon.SIGN_OUT.create();

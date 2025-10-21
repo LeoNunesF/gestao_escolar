@@ -22,6 +22,11 @@ public class TurmaService {
         this.turmaRepository = turmaRepository;
     }
 
+    //chamar ano letivo para grid
+    public List<Turma> listarTodasComAnoLetivo() {
+        return turmaRepository.listarTodasComAnoLetivo();
+    }
+
     // CREATE - Criar nova turma
     @Transactional
     public Turma criarTurma(Turma novaTurma, Usuario usuarioLogado) {

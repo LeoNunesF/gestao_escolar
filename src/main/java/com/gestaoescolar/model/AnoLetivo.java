@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.util.Objects;
+import com.gestaoescolar.model.AnoLetivo;
 
 @Entity
 @Table(name = "ano_letivo")
