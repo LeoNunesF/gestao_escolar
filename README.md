@@ -12,7 +12,7 @@ Sistema completo de gestão escolar desenvolvido em Java com Spring Boot e Vaadi
 - [x] **Configuração Brasileira** - Datas, horários e calendário em português
 
 **🔄 EM DESENVOLVIMENTO:**
-- [ ] Cadastro de Turmas e Séries
+- [x] Cadastro de Turmas e Séries
 - [ ] Módulo de Professores
 - [ ] Matrícula de Alunos
 - [ ] Diário de Classe

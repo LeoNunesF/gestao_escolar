@@ -2,6 +2,7 @@ package com.gestaoescolar.views.shared;
 
 import com.gestaoescolar.model.Usuario;
 import com.gestaoescolar.model.enums.PerfilUsuario;
+import com.gestaoescolar.views.diretor.ProfessorView;
 import com.gestaoescolar.views.diretor.TurmasView;
 import com.gestaoescolar.service.auth.AuthService;
 import com.gestaoescolar.views.diretor.AnoLetivoView;
@@ -67,6 +68,7 @@ public class MainLayout extends AppLayout {
             tabs.add(criarTab(VaadinIcon.CALENDAR, "Anos Letivos", AnoLetivoView.class));
             tabs.add(criarTab(VaadinIcon.USER, "Gestão de Usuários", UsuariosView.class));
             tabs.add(criarTab(VaadinIcon.GROUP, "Turmas", TurmasView.class));
+            tabs.add(criarTab(VaadinIcon.GROUP, "Professores", ProfessorView.class));
         }
 
         if (usuarioLogado != null) {
