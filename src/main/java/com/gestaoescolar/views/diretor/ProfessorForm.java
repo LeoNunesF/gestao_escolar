@@ -1,4 +1,5 @@
 package com.gestaoescolar.views.diretor;
+
 import com.gestaoescolar.model.Professor;
 import com.gestaoescolar.model.Usuario;
 import com.gestaoescolar.model.enums.FormacaoAcademica;
@@ -11,10 +12,11 @@ import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.shared.Registration;
-import jakarta.persistence.*;
 
 public class ProfessorForm extends FormLayout {
 
@@ -36,6 +38,7 @@ public class ProfessorForm extends FormLayout {
     private Professor professor;
     private final ProfessorService professorService;
     private final Usuario usuarioLogado;
+    private final Binder<Professor> binder = new Binder<>(Professor.class);
 
     public ProfessorForm(ProfessorService professorService, Usuario usuarioLogado) {
         this.professorService = professorService;
@@ -44,7 +47,10 @@ public class ProfessorForm extends FormLayout {
         genero.setItems(Genero.values());
         formacao.setItems(FormacaoAcademica.values());
 
-        salvar.addClickListener(e -> fireEvent(new SaveEvent(this, professor)));
+        // Faz binding automático dos campos por convenção de nomes (get/set)
+        binder.bindInstanceFields(this);
+
+        salvar.addClickListener(e -> save());
         cancelar.addClickListener(e -> fireEvent(new CloseEvent(this)));
 
         HorizontalLayout botoes = new HorizontalLayout(salvar, cancelar);
@@ -52,35 +58,31 @@ public class ProfessorForm extends FormLayout {
                 especializacao, dataAdmissao, ativo, botoes);
     }
 
-    public void setProfessor(Professor professor) {
-        this.professor = professor;
-        if (professor != null) {
-            nomeCompleto.setValue(professor.getNomeCompleto() != null ? professor.getNomeCompleto() : "");
-            cpf.setValue(professor.getCpf() != null ? professor.getCpf() : "");
-            rg.setValue(professor.getRg() != null ? professor.getRg() : "");
-            email.setValue(professor.getEmail() != null ? professor.getEmail() : "");
-            telefone.setValue(professor.getTelefone() != null ? professor.getTelefone() : "");
-            dataNascimento.setValue(professor.getDataNascimento());
-            genero.setValue(professor.getGenero());
-            formacao.setValue(professor.getFormacao());
-            especializacao.setValue(professor.getEspecializacao() != null ? professor.getEspecializacao() : "");
-            dataAdmissao.setValue(professor.getDataAdmissao());
-            ativo.setValue(professor.isAtivo());
+    private void save() {
+        if (professor == null) {
+            professor = new Professor();
+        }
+        boolean valid = binder.writeBeanIfValid(professor);
+        if (valid) {
+            // Dispara evento; a view decide se cria/atualiza via service
+            fireEvent(new SaveEvent(this, professor));
         } else {
-            nomeCompleto.clear();
-            cpf.clear();
-            rg.clear();
-            email.clear();
-            telefone.clear();
-            dataNascimento.clear();
-            genero.clear();
-            formacao.clear();
-            especializacao.clear();
-            dataAdmissao.clear();
-            ativo.clear();
+            Notification.show("Existem erros no formulário. Verifique os campos.", 3000, Notification.Position.MIDDLE);
         }
     }
 
+    public void setProfessor(Professor professor) {
+        this.professor = professor;
+        if (professor != null) {
+            binder.readBean(professor);
+            setVisible(true);
+        } else {
+            binder.readBean(new Professor());
+            setVisible(false);
+        }
+    }
+
+    // Eventos
     public static abstract class ProfessorFormEvent extends ComponentEvent<ProfessorForm> {
         private final Professor professor;
 
