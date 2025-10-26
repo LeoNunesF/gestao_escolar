@@ -1,52 +1,40 @@
 package com.gestaoescolar.model;
 
 import jakarta.persistence.Embeddable;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Endereço como @Embeddable — persistido na mesma tabela da entidade que o contém.
+ * Agora o campo 'estado' é do tipo Estado (enum).
+ */
 @Embeddable
 public class Endereco {
 
-    @NotBlank(message = "Logradouro é obrigatório")
-    @Size(max = 100)
+    @Size(max = 200)
     private String logradouro;
 
-    @NotBlank(message = "Número é obrigatório")
-    @Size(max = 10)
+    @Size(max = 20)
     private String numero;
 
-    @Size(max = 50)
+    @Size(max = 100)
     private String complemento;
 
-    @NotBlank(message = "Bairro é obrigatório")
-    @Size(max = 50)
+    @Size(max = 100)
     private String bairro;
 
-    @NotBlank(message = "Cidade é obrigatório")
-    @Size(max = 50)
+    @Size(max = 100)
     private String cidade;
 
-    @NotBlank(message = "Estado é obrigatório")
-    @Size(min = 2, max = 2, message = "Estado deve ter 2 caracteres")
-    private String estado;
+    @Enumerated(EnumType.STRING)
+    private Estado estado; // agora enum
 
-    @NotBlank(message = "CEP é obrigatório")
-    @Size(min = 8, max = 9, message = "CEP deve ter 8 ou 9 caracteres")
+    @Pattern(regexp = "\\d{5}-?\\d{3}", message = "CEP inválido")
     private String cep;
 
-    // Construtores
-    public Endereco() {}
-
-    public Endereco(String logradouro, String numero, String bairro, String cidade, String estado, String cep) {
-        this.logradouro = logradouro;
-        this.numero = numero;
-        this.bairro = bairro;
-        this.cidade = cidade;
-        this.estado = estado;
-        this.cep = cep;
-    }
-
-    // Getters e Setters
+    // getters e setters
     public String getLogradouro() { return logradouro; }
     public void setLogradouro(String logradouro) { this.logradouro = logradouro; }
 
@@ -62,21 +50,9 @@ public class Endereco {
     public String getCidade() { return cidade; }
     public void setCidade(String cidade) { this.cidade = cidade; }
 
-    public String getEstado() { return estado; }
-    public void setEstado(String estado) { this.estado = estado; }
+    public Estado getEstado() { return estado; }
+    public void setEstado(Estado estado) { this.estado = estado; }
 
     public String getCep() { return cep; }
     public void setCep(String cep) { this.cep = cep; }
-
-    public String getEnderecoCompleto() {
-        return String.format("%s, %s%s - %s, %s - %s",
-                logradouro, numero,
-                complemento != null ? " " + complemento : "",
-                bairro, cidade, estado);
-    }
-
-    @Override
-    public String toString() {
-        return getEnderecoCompleto();
-    }
 }
