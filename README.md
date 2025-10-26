@@ -1,51 +1,81 @@
 # 🏫 Sistema de Gestão Escolar
 
-Sistema completo de gestão escolar desenvolvido em Java com Spring Boot e Vaadin, adaptado para a realidade das escolas brasileiras.
+Sistema de gestão escolar desenvolvido em Java com Spring Boot e Vaadin, voltado à realidade das escolas brasileiras.
 
 ## 🚀 Status do Projeto
 
-**✅ FUNCIONALIDADES IMPLEMENTADAS:**
-- [x] **Sistema de Autenticação** - Login com perfis (Diretor, Secretaria, Professor)
-- [x] **Gestão de Anos Letivos** - CRUD completo com datas no padrão brasileiro
-- [x] **Gestão de Usuários** - CRUD completo com validações de segurança
-- [x] **Interface Responsiva** - Menu adaptativo por perfil de usuário
-- [x] **Configuração Brasileira** - Datas, horários e calendário em português
-- [x] **Gestão de Turmas** - CRUD de turmas com geração de código
-- [x] **Módulo de Professores (parcialmente concluído)** - CRUD de Professores, validações (CPF/Telefone), formulário de endereço, DatePicker em pt-BR, filtros básicos e integração inicial com serviço
+✅ Implementado
+- Autenticação e perfis (Diretor, Secretaria, Professor)
+- CRUD de Anos Letivos
+- CRUD de Turmas com geração automática de código
+- Visualização de Turmas (grid completo com série, nível, turno, ano, vagas, status)
+- CRUD de Professores (dados pessoais, formação, endereço)
+- Atribuição de Professores às Turmas com papéis:
+    - Titular, Substituto, Coordenador
+    - Diálogo de atribuição na Gestão de Turmas
+    - Exibição dos vínculos na Gestão de Turmas (coluna “Professores”)
+    - “Ver Turmas” na Gestão de Professores, com Código, Nome e Papel
+- Ajustes de lazy-loading e UX (diálogos dimensionáveis, botões Imprimir/Fechar)
 
-**🔄 EM DESENVOLVIMENTO / PENDÊNCIAS:**
-- [ ] Vincular Professores às Turmas (atribuição / lotação / papel: titular/substituto)
-- [ ] Matrícula de Alunos
-- [ ] Diário de Classe
-- [ ] Controle de Frequência
-- [ ] Lançamento de Notas e Boletins
-- [ ] Relatórios e Estatísticas
+🔄 Em desenvolvimento
+- Disciplinas e Matriz Curricular (modelagem e UI)
+- Matrícula de alunos
+- Diário de classe, frequência e avaliações
+- Relatórios e exportações (PDF/CSV)
+- Regras e permissões refinadas (Secretaria/Diretoria por caso de uso)
 
-**📋 PRÓXIMAS ETAPAS IMEDIATAS (Professores)**
-- Implementar associação Professores <-> Turmas (ver recomendação abaixo)
-- Adicionar UI de atribuição de professor em TurmaForm e visualização de turmas vinculadas no ProfessorView
-- Testes automatizados (unit e integração) para services de Professor/Turma
-- Migrações DB (Flyway/Liquibase) se for necessário manter histórico de dados
-- Pequenas melhorias UX: máscara em tempo real (CPF/Telefone), paginação/ordenação na grid, export CSV/PDF
+📋 Próximas etapas imediatas
+- Disciplinas (entidade) e Matriz Curricular (por Ano Letivo + Nível + Série)
+    - Evoluir o vínculo Professor↔Turma para incluir Disciplina como relação (hoje é texto)
+- Regras:
+    - Garantir 1 Titular por Turma
+    - Bloquear atribuição de professor inativo/demitido
+    - Validar períodos (início/fim) e sobreposições
+- Permissões:
+    - Validar perfis: Diretoria e Secretaria podem atribuir professores; Professor não
+- Documentação e testes
+    - Atualizar Roadmap/README (este arquivo)
+    - Testes de serviço de atribuição e de UI
 
-## 🛠️ Tecnologias Utilizadas
+## 🛠️ Tecnologias
 
-- **Backend:** Java 17, Spring Boot 3.2, Spring Data JPA, Spring Security
-- **Frontend:** Vaadin 24, HTML5, CSS3
-- **Banco de Dados:** H2 (desenvolvimento), PostgreSQL (produção)
-- **Ferramentas:** Maven, IntelliJ IDEA, Git/GitHub
-- **Padrões:** MVC, Repository Pattern, Dependency Injection
+- Backend: Java 17, Spring Boot 3.x, Spring Data JPA, Spring Security
+- Frontend: Vaadin 24
+- Banco: H2 (desenvolvimento); PostgreSQL (produção – recomendado)
+- Ferramentas: Maven, Git/GitHub
 
-## 📋 Pré-requisitos
+## 📦 Executando localmente
 
-- Java 17 ou superior
-- Maven 3.6+
-- Git
-- IDE (IntelliJ IDEA recomendado)
+```bash
+git clone https://github.com/LeoNunesF/gestao_escolar.git
+cd gestao_escolar
+mvn spring-boot:run
+# Acesse http://localhost:8080
+```
 
-## 🚀 Como Executar
+## 🧱 Decisões de Modelagem (resumo)
 
-1. **Clone o repositório:**
-   ```bash
-   git clone https://github.com/LeoNunesF/gestao_escolar.git
-   cd gestao_escolar
+- Professor↔Turma: entidade de junção (ProfessorTurma) com papel (Titular/Substituto/Coordenador), disciplina (hoje string), e período (início/fim).
+- Disciplinas: entidade própria (não enum), para permitir:
+    - Inclusão/remoção sem recompilar
+    - Variação por etapa/série/rede
+    - Compatibilidade com BNCC e matrizes por Ano Letivo
+- Matriz Curricular: agrupa as Disciplinas por Ano Letivo + Nível + Série.
+- Evolução incremental:
+    - Manter campo “disciplina” em ProfessorTurma (string) por ora
+    - Futuro: relacionar ProfessorTurma → Disciplina e oferecer seleção controlada pela Matriz da turma
+
+## ✅ Regras e Validações (alvos)
+
+- Professor↔Turma:
+    - 1 Titular por turma
+    - Não permitir vínculo com professor inativo/demitido
+    - Validar períodos (início ≤ fim) e sobreposições
+- Turmas:
+    - Capacidade/vagas consistente com matrículas
+    - Troca de titular com confirmação
+- Segurança:
+    - Perfis e autorização por caso de uso
+    - Auditoria de alterações sensíveis
+
+Contribuições e sugestões são bem-vindas!

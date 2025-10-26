@@ -1,8 +1,8 @@
 package com.gestaoescolar.views.diretor;
 
+import com.gestaoescolar.dto.VinculoProfessorTurmaDTO;
 import com.gestaoescolar.model.Professor;
 import com.gestaoescolar.model.ProfessorTurma;
-import com.gestaoescolar.model.Turma;
 import com.gestaoescolar.model.enums.FormacaoAcademica;
 import com.gestaoescolar.model.Usuario;
 import com.gestaoescolar.service.auth.AuthService;
@@ -39,7 +39,6 @@ public class ProfessorView extends VerticalLayout {
     private ProfessorForm form;
     private Usuario usuarioLogado;
 
-    // filtros
     private TextField filtro = new TextField();
     private ComboBox<String> filtroStatus = new ComboBox<>();
     private ComboBox<FormacaoAcademica> filtroFormacao = new ComboBox<>();
@@ -53,19 +52,13 @@ public class ProfessorView extends VerticalLayout {
         this.usuarioLogado = authService.getUsuarioLogado();
 
         setSizeFull();
-
-        // Cabeçalho
         add(new H2("Gestão de Professores"));
 
-        // Configura componentes
         configureGrid();
         configureForm();
-
-        // Monta toolbar (retorna o layout) e adiciona toolbar + grid + form ao layout
         HorizontalLayout toolbar = createToolbar();
         add(toolbar, grid, form);
 
-        // Inicializa dados e estado do editor
         updateList();
         closeEditor();
     }
@@ -85,7 +78,6 @@ public class ProfessorView extends VerticalLayout {
         filtroFormacao.addValueChangeListener(e -> applyFilters());
 
         Button novoProfessor = new Button("Novo Professor", e -> {
-            // cria e abre o form corretamente
             Professor novo = new Professor();
             form.setProfessor(novo);
             form.setVisible(true);
@@ -97,15 +89,11 @@ public class ProfessorView extends VerticalLayout {
         return toolbar;
     }
 
-    /**
-     * Aplica os filtros. Busca a lista completa do service e filtra em memória.
-     */
     private void applyFilters() {
         String termo = filtro.getValue();
         String status = filtroStatus.getValue();
         FormacaoAcademica formacao = filtroFormacao.getValue();
 
-        // Pega lista completa (o service já faz validação de permissão)
         List<Professor> lista = professorService.listarTodosProfessores(usuarioLogado);
         if (lista == null) {
             grid.setItems(Collections.emptyList());
@@ -117,29 +105,20 @@ public class ProfessorView extends VerticalLayout {
         if (termo != null && !termo.isBlank()) {
             String t = termo.trim().toLowerCase();
             String digits = t.replaceAll("\\D", "");
-
-            // Se parece CPF (11 dígitos), tenta busca direta por CPF via service
             if (digits.length() == 11) {
                 var opt = professorService.buscarPorCpf(digits, usuarioLogado);
-                if (opt.isPresent()) {
-                    filtrada = List.of(opt.get());
-                } else {
-                    filtrada = Collections.emptyList();
-                }
+                filtrada = opt.map(List::of).orElseGet(Collections::emptyList);
             } else {
-                // Busca por nome (usa o método do seu service)
                 filtrada = professorService.buscarPorNome(t, usuarioLogado);
             }
         }
 
-        // Filtrar por status (se selecionado)
         if ("Ativos".equals(status)) {
             filtrada = filtrada.stream().filter(Professor::isAtivo).collect(Collectors.toList());
         } else if ("Inativos".equals(status)) {
             filtrada = filtrada.stream().filter(p -> !p.isAtivo()).collect(Collectors.toList());
         }
 
-        // Filtrar por formação (se selecionada)
         if (formacao != null) {
             filtrada = filtrada.stream()
                     .filter(p -> Objects.equals(p.getFormacao(), formacao))
@@ -151,7 +130,6 @@ public class ProfessorView extends VerticalLayout {
 
     private void configureGrid() {
         grid.removeAllColumns();
-        // Ajuste as colunas aqui para refletir exatamente o que você quer ver.
         grid.addColumn(Professor::getNomeCompleto).setHeader("Nome").setAutoWidth(true);
         grid.addColumn(Professor::getCpf).setHeader("CPF").setAutoWidth(true);
         grid.addColumn(Professor::getEmail).setHeader("Email").setAutoWidth(true);
@@ -159,7 +137,6 @@ public class ProfessorView extends VerticalLayout {
         grid.addColumn(Professor::getFormacao).setHeader("Formação").setAutoWidth(true);
         grid.addColumn(prof -> prof.isAtivo() ? "Sim" : "Não").setHeader("Ativo").setAutoWidth(true);
 
-        // Ações: editar, ver turmas e ativar/desativar
         grid.addComponentColumn(prof -> {
             Button editar = new Button("Editar", ev -> editProfessor(prof));
             Button verTurmas = new Button("Ver Turmas", ev -> openTurmasDialog(prof));
@@ -173,12 +150,9 @@ public class ProfessorView extends VerticalLayout {
                     updateList();
                 } catch (Exception ex) {
                     Notification.show("Erro ao alterar status: " + ex.getMessage(), 4000, Notification.Position.MIDDLE);
-                    System.err.println("Erro ao alterar status do professor: " + ex.getMessage());
-                    ex.printStackTrace();
                 }
             });
-            HorizontalLayout actions = new HorizontalLayout(editar, verTurmas, toggle);
-            return actions;
+            return new HorizontalLayout(editar, verTurmas, toggle);
         }).setHeader("Ações").setAutoWidth(true);
 
         grid.setSizeFull();
@@ -193,23 +167,39 @@ public class ProfessorView extends VerticalLayout {
         dialog.setDraggable(true);
         dialog.setResizable(true);
 
-        var rows = professorTurmaService.listTurmasResumoByProfessor(professor.getId());
+        List<VinculoProfessorTurmaDTO> rows =
+                professorTurmaService.listVinculosResumoByProfessor(professor.getId());
 
         if (rows == null || rows.isEmpty()) {
             dialog.add(new H3("Nenhuma turma atribuída."));
         } else {
-            Grid<com.gestaoescolar.dto.TurmaResumoDTO> turmasGrid = new Grid<>(com.gestaoescolar.dto.TurmaResumoDTO.class, false);
-            turmasGrid.addColumn(com.gestaoescolar.dto.TurmaResumoDTO::getCodigo).setHeader("Código").setAutoWidth(true);
-            turmasGrid.addColumn(com.gestaoescolar.dto.TurmaResumoDTO::getNome).setHeader("Nome").setAutoWidth(true);
+            Grid<VinculoProfessorTurmaDTO> turmasGrid = new Grid<>(VinculoProfessorTurmaDTO.class, false);
+            turmasGrid.addColumn(VinculoProfessorTurmaDTO::getCodigo).setHeader("Código").setAutoWidth(true);
+            turmasGrid.addColumn(VinculoProfessorTurmaDTO::getNome).setHeader("Nome").setAutoWidth(true);
+            turmasGrid.addColumn(dto -> mapPapel(dto.getPapel())).setHeader("Papel").setAutoWidth(true);
             turmasGrid.setSizeFull();
             turmasGrid.setItems(rows);
             dialog.add(turmasGrid);
         }
+
+        // Footer com ações
+        Button imprimir = new Button("Imprimir", e ->
+                getUI().ifPresent(ui -> ui.getPage().executeJs("window.print()"))
+        );
+        Button fechar = new Button("Fechar", e -> dialog.close());
+
+        dialog.getFooter().add(imprimir, fechar);
         dialog.open();
     }
 
-    // DTO leve para exibição no diálogo (evita tocar em proxies JPA)
-    private record TurmaResumo(String codigo, String nome) {}
+    private String mapPapel(ProfessorTurma.Papel p) {
+        if (p == null) return "";
+        return switch (p) {
+            case TITULAR -> "Titular";
+            case SUBSTITUTO -> "Substituto";
+            case COORDENADOR -> "Coordenador";
+        };
+    }
 
     private void configureForm() {
         form = new ProfessorForm(professorService, usuarioLogado);
@@ -231,11 +221,8 @@ public class ProfessorView extends VerticalLayout {
             updateList();
             closeEditor();
         } catch (Exception ex) {
-            // Mostrar mensagem ao usuário e logar para depuração
             String msg = ex.getMessage() != null ? ex.getMessage() : "Erro desconhecido";
             Notification.show("Erro ao salvar: " + msg, 5000, Notification.Position.MIDDLE);
-            System.err.println("Erro ao salvar professor: " + msg);
-            ex.printStackTrace();
         }
     }
 
@@ -251,7 +238,6 @@ public class ProfessorView extends VerticalLayout {
     private void closeEditor() {
         form.setProfessor(null);
         form.setVisible(false);
-        // limpar seleção da grid
         grid.getSelectionModel().deselectAll();
     }
 

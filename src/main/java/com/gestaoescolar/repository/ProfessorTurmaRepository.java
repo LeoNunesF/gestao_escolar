@@ -1,6 +1,7 @@
 package com.gestaoescolar.repository;
 
 import com.gestaoescolar.dto.TurmaResumoDTO;
+import com.gestaoescolar.dto.VinculoProfessorTurmaDTO;
 import com.gestaoescolar.model.ProfessorTurma;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -20,9 +21,9 @@ public interface ProfessorTurmaRepository extends JpaRepository<ProfessorTurma, 
 
     Optional<ProfessorTurma> findByProfessorIdAndTurmaId(Long professorId, Long turmaId);
 
-    // NOVO: busca direta em DTO (evita qualquer lazy/proxy)
-    @Query("select new com.gestaoescolar.dto.TurmaResumoDTO(t.codigo, t.nomeTurma) " +
+    // Novo: retorna diretamente DTO com código, nome da turma e papel
+    @Query("select new com.gestaoescolar.dto.VinculoProfessorTurmaDTO(t.codigo, t.nomeTurma, pt.papel) " +
             "from ProfessorTurma pt join pt.turma t " +
             "where pt.professor.id = :profId")
-    List<TurmaResumoDTO> findTurmasResumoByProfessorId(@Param("profId") Long profId);
+    List<VinculoProfessorTurmaDTO> findVinculosResumoByProfessorId(@Param("profId") Long profId);
 }

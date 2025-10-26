@@ -1,6 +1,6 @@
 package com.gestaoescolar.service.escola;
 
-import com.gestaoescolar.dto.TurmaResumoDTO;
+import com.gestaoescolar.dto.VinculoProfessorTurmaDTO;
 import com.gestaoescolar.model.Professor;
 import com.gestaoescolar.model.ProfessorTurma;
 import com.gestaoescolar.model.Turma;
@@ -105,8 +105,8 @@ public class ProfessorTurmaService {
         return repo.findByTurmaId(turmaId);
     }
 
-    // NOVO: retorna DTOs prontos para a view
-    public List<TurmaResumoDTO> listTurmasResumoByProfessor(Long professorId) {
-        return repo.findTurmasResumoByProfessorId(professorId);
+    // Novo: retorna DTO com código, nome e papel do vínculo
+    public List<VinculoProfessorTurmaDTO> listVinculosResumoByProfessor(Long professorId) {
+        return repo.findVinculosResumoByProfessorId(professorId);
     }
 }

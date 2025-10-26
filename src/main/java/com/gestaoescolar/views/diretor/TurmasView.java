@@ -39,7 +39,6 @@ public class TurmasView extends VerticalLayout {
     private final AuthService authService;
     private final Usuario usuarioLogado;
 
-    // Serviços para atribuição
     private final ProfessorService professorService;
     private final ProfessorTurmaService professorTurmaService;
 
@@ -139,19 +138,19 @@ public class TurmasView extends VerticalLayout {
             return statusIcon;
         }).setHeader("Ativa").setAutoWidth(true);
 
-        // NOVA coluna: Professores atribuídos (via ProfessorTurma)
+        // Professores atribuídos (agora exibe o papel para qualquer vínculo)
         grid.addColumn(turma -> formatarProfessoresAtribuidos(turma.getId()))
                 .setHeader("Professores")
                 .setAutoWidth(true)
                 .setFlexGrow(1);
 
-        // Coluna de ações (inclui Atribuir Professor)
         grid.addComponentColumn(this::createActionButtons)
                 .setHeader("Ações")
                 .setAutoWidth(true);
 
         grid.getColumns().forEach(col -> col.setResizable(true));
         grid.setSelectionMode(Grid.SelectionMode.NONE);
+
     }
 
     private String formatarProfessoresAtribuidos(Long turmaId) {
@@ -162,7 +161,13 @@ public class TurmasView extends VerticalLayout {
                     String nome = (pt.getProfessor() != null && pt.getProfessor().getNomeCompleto() != null)
                             ? pt.getProfessor().getNomeCompleto()
                             : "(sem nome)";
-                    return pt.getPapel() == ProfessorTurma.Papel.TITULAR ? nome + " (Titular)" : nome;
+                    String papel = switch (pt.getPapel()) {
+                        case TITULAR -> "Titular";
+                        case SUBSTITUTO -> "Substituto";
+                        case COORDENADOR -> "Coordenador";
+                        default -> "";
+                    };
+                    return papel.isBlank() ? nome : (nome + " (" + papel + ")");
                 })
                 .collect(Collectors.joining(", "));
     }
