@@ -1,6 +1,7 @@
 package com.gestaoescolar.views.auth;
 
 import com.gestaoescolar.service.auth.AuthService;
+import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -62,6 +63,9 @@ public class LoginView extends VerticalLayout {
         loginButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         loginButton.setWidthFull();
 
+        // Atalho Enter: atalho no botão é a solução mais simples e robusta
+        loginButton.addClickShortcut(Key.ENTER);
+
         // Layout do formulário
         VerticalLayout formulario = new VerticalLayout();
         formulario.setWidth("400px");
@@ -74,6 +78,9 @@ public class LoginView extends VerticalLayout {
         formulario.add(loginField, senhaField, loginButton);
 
         add(titulo, subtitulo, formulario);
+
+        // foco inicial
+        loginField.focus();
     }
 
     private void configurarCampos() {
@@ -85,23 +92,15 @@ public class LoginView extends VerticalLayout {
         senhaField.setPlaceholder("Digite sua senha");
         senhaField.setRequired(true);
 
-        // Enter para submeter
-        loginField.addKeyPressListener(e -> {
-            if ("Enter".equals(e.getKey().getKeys().toString())) {
-                realizarLogin();
-            }
-        });
-
-        senhaField.addKeyPressListener(e -> {
-            if ("Enter".equals(e.getKey().getKeys().toString())) {
-                realizarLogin();
-            }
-        });
+        // Opcional: Enter no campo também pode submeter (fallback)
+        // sem depender de string magic no key event
+        loginField.addKeyDownListener(Key.ENTER, e -> realizarLogin());
+        senhaField.addKeyDownListener(Key.ENTER, e -> realizarLogin());
     }
 
     private void realizarLogin() {
         if (loginField.isEmpty() || senhaField.isEmpty()) {
-            Notification.show("Preencha login e senha");
+            Notification.show("Preencha login e senha", 2500, Notification.Position.MIDDLE);
             return;
         }
 
@@ -109,14 +108,15 @@ public class LoginView extends VerticalLayout {
             boolean loginSucesso = authService.login(loginField.getValue(), senhaField.getValue());
 
             if (loginSucesso) {
-                Notification.show("Login realizado com sucesso!");
+                Notification.show("Login realizado com sucesso!", 1500, Notification.Position.BOTTOM_START);
                 UI.getCurrent().navigate("");
             } else {
-                Notification.show("Login ou senha incorretos");
+                Notification.show("Login ou senha incorretos", 3000, Notification.Position.MIDDLE);
                 senhaField.clear();
+                senhaField.focus();
             }
         } catch (Exception e) {
-            Notification.show("Erro ao realizar login: " + e.getMessage());
+            Notification.show("Erro ao realizar login: " + e.getMessage(), 5000, Notification.Position.MIDDLE);
         }
     }
 }
