@@ -3,12 +3,15 @@ package com.gestaoescolar.views.diretor;
 import com.gestaoescolar.model.Turma;
 import com.gestaoescolar.model.AnoLetivo;
 import com.gestaoescolar.model.Usuario;
-import com.gestaoescolar.model.enums.NivelEscolar;
+import com.gestaoescolar.model.ProfessorTurma;
 import com.gestaoescolar.model.enums.Serie;
 import com.gestaoescolar.model.enums.Turno;
-import com.gestaoescolar.service.auth.AuthService;
-import com.gestaoescolar.service.escola.TurmaService;
 import com.gestaoescolar.service.AnoLetivoService;
+import com.gestaoescolar.service.auth.AuthService;
+import com.gestaoescolar.service.escola.ProfessorService;
+import com.gestaoescolar.service.escola.ProfessorTurmaService;
+import com.gestaoescolar.service.escola.TurmaService;
+import com.gestaoescolar.views.components.AssignProfessorDialog;
 import com.gestaoescolar.views.shared.MainLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -25,6 +28,7 @@ import com.vaadin.flow.router.Route;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Route(value = "diretor/turmas", layout = MainLayout.class)
 @PageTitle("Gestão de Turmas | Gestão Escolar")
@@ -35,6 +39,9 @@ public class TurmasView extends VerticalLayout {
     private final AuthService authService;
     private final Usuario usuarioLogado;
 
+    // Serviços para atribuição
+    private final ProfessorService professorService;
+    private final ProfessorTurmaService professorTurmaService;
 
     private final Grid<Turma> grid = new Grid<>(Turma.class);
     private final TextField filterText = new TextField();
@@ -43,11 +50,17 @@ public class TurmasView extends VerticalLayout {
     private final ComboBox<Turno> filterTurno = new ComboBox<>();
     private final ComboBox<Boolean> filterAtiva = new ComboBox<>();
 
-    public TurmasView(TurmaService turmaService, AnoLetivoService anoLetivoService, AuthService authService) {
+    public TurmasView(TurmaService turmaService,
+                      AnoLetivoService anoLetivoService,
+                      AuthService authService,
+                      ProfessorService professorService,
+                      ProfessorTurmaService professorTurmaService) {
         this.turmaService = turmaService;
         this.anoLetivoService = anoLetivoService;
         this.authService = authService;
         this.usuarioLogado = authService.getUsuarioLogado();
+        this.professorService = professorService;
+        this.professorTurmaService = professorTurmaService;
 
         setSizeFull();
         setPadding(true);
@@ -61,37 +74,31 @@ public class TurmasView extends VerticalLayout {
     }
 
     private HorizontalLayout createToolbar() {
-        // Filtro por nome/código
         filterText.setPlaceholder("Filtrar por nome ou código...");
         filterText.setClearButtonVisible(true);
         filterText.setValueChangeMode(ValueChangeMode.LAZY);
         filterText.addValueChangeListener(e -> updateList());
 
-        // Filtro por ano letivo
         filterAnoLetivo.setPlaceholder("Todos os anos");
         filterAnoLetivo.setItems(anoLetivoService.findAll());
         filterAnoLetivo.setItemLabelGenerator(ano -> "Ano " + ano.getAno());
         filterAnoLetivo.addValueChangeListener(e -> updateList());
 
-        // Filtro por série
         filterSerie.setPlaceholder("Todas as séries");
         filterSerie.setItems(Arrays.asList(Serie.values()));
         filterSerie.setItemLabelGenerator(Serie::getNome);
         filterSerie.addValueChangeListener(e -> updateList());
 
-        // Filtro por turno
         filterTurno.setPlaceholder("Todos os turnos");
         filterTurno.setItems(Arrays.asList(Turno.values()));
         filterTurno.setItemLabelGenerator(Turno::getDescricao);
         filterTurno.addValueChangeListener(e -> updateList());
 
-        // Filtro por status
         filterAtiva.setPlaceholder("Todos os status");
         filterAtiva.setItems(true, false);
         filterAtiva.setItemLabelGenerator(ativa -> ativa ? "Ativas" : "Inativas");
         filterAtiva.addValueChangeListener(e -> updateList());
 
-        // Botão nova turma
         Button addButton = new Button("Nova Turma", new Icon(VaadinIcon.PLUS));
         addButton.addClickListener(e -> openForm(new Turma()));
 
@@ -111,7 +118,6 @@ public class TurmasView extends VerticalLayout {
         grid.setSizeFull();
         grid.removeAllColumns();
 
-        // Colunas principais
         grid.addColumn(Turma::getCodigo).setHeader("Código").setAutoWidth(true).setSortable(true);
         grid.addColumn(Turma::getNomeTurma).setHeader("Nome").setAutoWidth(true).setSortable(true);
         grid.addColumn(turma -> turma.getSerie().getNome()).setHeader("Série").setAutoWidth(true).setSortable(true);
@@ -119,66 +125,77 @@ public class TurmasView extends VerticalLayout {
         grid.addColumn(turma -> turma.getTurno().getDescricao()).setHeader("Turno").setAutoWidth(true).setSortable(true);
         grid.addColumn(turma -> turma.getAnoLetivo().getAno()).setHeader("Ano Letivo").setAutoWidth(true).setSortable(true);
 
-        // Coluna de capacidade e vagas
         grid.addColumn(turma ->
                 turma.getCapacidade() != null ?
                         turma.getVagasDisponiveis() + "/" + turma.getCapacidade() :
                         "-"
         ).setHeader("Vagas").setAutoWidth(true);
 
-        // Coluna de sala
         grid.addColumn(Turma::getSala).setHeader("Sala").setAutoWidth(true);
 
-        // Coluna de status com ícone
         grid.addComponentColumn(turma -> {
-            Icon statusIcon = turma.isAtiva() ?
-                    new Icon(VaadinIcon.CHECK) : new Icon(VaadinIcon.CLOSE);
+            Icon statusIcon = turma.isAtiva() ? new Icon(VaadinIcon.CHECK) : new Icon(VaadinIcon.CLOSE);
             statusIcon.setColor(turma.isAtiva() ? "green" : "red");
             return statusIcon;
         }).setHeader("Ativa").setAutoWidth(true);
 
-        // Coluna de professor titular
-        grid.addColumn(turma ->
-                turma.getProfessorTitular() != null ?
-                        turma.getProfessorTitular().getNomeFormatado() :
-                        "Sem professor"
-        ).setHeader("Professor").setAutoWidth(true);
+        // NOVA coluna: Professores atribuídos (via ProfessorTurma)
+        grid.addColumn(turma -> formatarProfessoresAtribuidos(turma.getId()))
+                .setHeader("Professores")
+                .setAutoWidth(true)
+                .setFlexGrow(1);
 
-        // Coluna de ações
-        grid.addComponentColumn(turma -> createActionButtons(turma))
+        // Coluna de ações (inclui Atribuir Professor)
+        grid.addComponentColumn(this::createActionButtons)
                 .setHeader("Ações")
                 .setAutoWidth(true);
 
-        // Configurações da grid
         grid.getColumns().forEach(col -> col.setResizable(true));
         grid.setSelectionMode(Grid.SelectionMode.NONE);
+    }
+
+    private String formatarProfessoresAtribuidos(Long turmaId) {
+        List<ProfessorTurma> atribuicoes = professorTurmaService.listByTurma(turmaId);
+        if (atribuicoes == null || atribuicoes.isEmpty()) return "Sem professor";
+        return atribuicoes.stream()
+                .map(pt -> {
+                    String nome = (pt.getProfessor() != null && pt.getProfessor().getNomeCompleto() != null)
+                            ? pt.getProfessor().getNomeCompleto()
+                            : "(sem nome)";
+                    return pt.getPapel() == ProfessorTurma.Papel.TITULAR ? nome + " (Titular)" : nome;
+                })
+                .collect(Collectors.joining(", "));
     }
 
     private HorizontalLayout createActionButtons(Turma turma) {
         HorizontalLayout layout = new HorizontalLayout();
         layout.setSpacing(true);
 
-        // Botão editar
         Button editButton = new Button(new Icon(VaadinIcon.EDIT));
         editButton.addClickListener(e -> openForm(turma));
         editButton.setTooltipText("Editar turma");
 
-        // Botão ativar/desativar
         Button statusButton = new Button(turma.isAtiva() ?
                 new Icon(VaadinIcon.BAN) : new Icon(VaadinIcon.CHECK));
         statusButton.addClickListener(e -> toggleStatusTurma(turma));
         statusButton.setTooltipText(turma.isAtiva() ? "Desativar turma" : "Ativar turma");
 
-        layout.add(editButton, statusButton);
+        Button assignButton = new Button(new Icon(VaadinIcon.USER_STAR));
+        assignButton.setTooltipText("Atribuir professor");
+        assignButton.addClickListener(e -> {
+            AssignProfessorDialog dialog = new AssignProfessorDialog(
+                    turma, professorService, professorTurmaService, usuarioLogado);
+            dialog.open();
+            dialog.addDetachListener(dl -> updateList());
+        });
 
+        layout.add(editButton, statusButton, assignButton);
         return layout;
     }
 
     private void updateList() {
-        // Por enquanto, mostra todas as turmas
-        // Futuro: implementar filtros no service
         List<Turma> turmas = turmaService.listarTodasComAnoLetivo();
-        grid.setItems(turmas); // injeta o ano letivo
+        grid.setItems(turmas);
     }
 
     private void openForm(Turma turma) {
@@ -188,7 +205,7 @@ public class TurmasView extends VerticalLayout {
 
     private void toggleStatusTurma(Turma turma) {
         try {
-            turmaService.toggleStatusTurma(turma.getId(), usuarioLogado); // Usuario será injetado depois
+            turmaService.toggleStatusTurma(turma.getId(), usuarioLogado);
             updateList();
         } catch (Exception e) {
             showError("Erro ao alterar status: " + e.getMessage());
@@ -196,8 +213,6 @@ public class TurmasView extends VerticalLayout {
     }
 
     private void showError(String mensagem) {
-        getUI().ifPresent(ui -> ui.getPage().executeJs(
-                "alert($0)", mensagem
-        ));
+        getUI().ifPresent(ui -> ui.getPage().executeJs("alert($0)", mensagem));
     }
 }

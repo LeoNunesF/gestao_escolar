@@ -1,15 +1,20 @@
 package com.gestaoescolar.views.diretor;
 
 import com.gestaoescolar.model.Professor;
+import com.gestaoescolar.model.ProfessorTurma;
+import com.gestaoescolar.model.Turma;
 import com.gestaoescolar.model.enums.FormacaoAcademica;
 import com.gestaoescolar.model.Usuario;
 import com.gestaoescolar.service.auth.AuthService;
 import com.gestaoescolar.service.escola.ProfessorService;
+import com.gestaoescolar.service.escola.ProfessorTurmaService;
 import com.gestaoescolar.views.shared.MainLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -27,6 +32,7 @@ import java.util.stream.Collectors;
 public class ProfessorView extends VerticalLayout {
 
     private final ProfessorService professorService;
+    private final ProfessorTurmaService professorTurmaService;
     private final AuthService authService;
 
     private Grid<Professor> grid = new Grid<>(Professor.class, false);
@@ -38,8 +44,11 @@ public class ProfessorView extends VerticalLayout {
     private ComboBox<String> filtroStatus = new ComboBox<>();
     private ComboBox<FormacaoAcademica> filtroFormacao = new ComboBox<>();
 
-    public ProfessorView(ProfessorService professorService, AuthService authService) {
+    public ProfessorView(ProfessorService professorService,
+                         ProfessorTurmaService professorTurmaService,
+                         AuthService authService) {
         this.professorService = professorService;
+        this.professorTurmaService = professorTurmaService;
         this.authService = authService;
         this.usuarioLogado = authService.getUsuarioLogado();
 
@@ -118,14 +127,8 @@ public class ProfessorView extends VerticalLayout {
                     filtrada = Collections.emptyList();
                 }
             } else {
-                // Busca por nome ou CPF parcial
-                filtrada = lista.stream()
-                        .filter(p -> {
-                            String nome = p.getNomeCompleto() == null ? "" : p.getNomeCompleto().toLowerCase();
-                            String cpf = p.getCpf() == null ? "" : p.getCpf();
-                            return nome.contains(t) || cpf.replaceAll("\\D", "").contains(t.replaceAll("\\D", ""));
-                        })
-                        .collect(Collectors.toList());
+                // Busca por nome (usa o método do seu service)
+                filtrada = professorService.buscarPorNome(t, usuarioLogado);
             }
         }
 
@@ -156,9 +159,10 @@ public class ProfessorView extends VerticalLayout {
         grid.addColumn(Professor::getFormacao).setHeader("Formação").setAutoWidth(true);
         grid.addColumn(prof -> prof.isAtivo() ? "Sim" : "Não").setHeader("Ativo").setAutoWidth(true);
 
-        // Ações: editar e ativar/desativar
+        // Ações: editar, ver turmas e ativar/desativar
         grid.addComponentColumn(prof -> {
             Button editar = new Button("Editar", ev -> editProfessor(prof));
+            Button verTurmas = new Button("Ver Turmas", ev -> openTurmasDialog(prof));
             Button toggle = new Button(prof.isAtivo() ? "Desativar" : "Reativar", ev -> {
                 try {
                     if (prof.isAtivo()) {
@@ -173,13 +177,39 @@ public class ProfessorView extends VerticalLayout {
                     ex.printStackTrace();
                 }
             });
-            HorizontalLayout actions = new HorizontalLayout(editar, toggle);
+            HorizontalLayout actions = new HorizontalLayout(editar, verTurmas, toggle);
             return actions;
         }).setHeader("Ações").setAutoWidth(true);
 
         grid.setSizeFull();
         grid.asSingleSelect().addValueChangeListener(event -> editProfessor(event.getValue()));
     }
+
+    private void openTurmasDialog(Professor professor) {
+        Dialog dialog = new Dialog();
+        dialog.setHeaderTitle("Turmas atribuídas a " + professor.getNomeCompleto());
+        dialog.setWidth("900px");
+        dialog.setHeight("70vh");
+        dialog.setDraggable(true);
+        dialog.setResizable(true);
+
+        var rows = professorTurmaService.listTurmasResumoByProfessor(professor.getId());
+
+        if (rows == null || rows.isEmpty()) {
+            dialog.add(new H3("Nenhuma turma atribuída."));
+        } else {
+            Grid<com.gestaoescolar.dto.TurmaResumoDTO> turmasGrid = new Grid<>(com.gestaoescolar.dto.TurmaResumoDTO.class, false);
+            turmasGrid.addColumn(com.gestaoescolar.dto.TurmaResumoDTO::getCodigo).setHeader("Código").setAutoWidth(true);
+            turmasGrid.addColumn(com.gestaoescolar.dto.TurmaResumoDTO::getNome).setHeader("Nome").setAutoWidth(true);
+            turmasGrid.setSizeFull();
+            turmasGrid.setItems(rows);
+            dialog.add(turmasGrid);
+        }
+        dialog.open();
+    }
+
+    // DTO leve para exibição no diálogo (evita tocar em proxies JPA)
+    private record TurmaResumo(String codigo, String nome) {}
 
     private void configureForm() {
         form = new ProfessorForm(professorService, usuarioLogado);
