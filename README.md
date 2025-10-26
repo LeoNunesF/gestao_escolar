@@ -10,18 +10,23 @@ Sistema completo de gestão escolar desenvolvido em Java com Spring Boot e Vaadi
 - [x] **Gestão de Usuários** - CRUD completo com validações de segurança
 - [x] **Interface Responsiva** - Menu adaptativo por perfil de usuário
 - [x] **Configuração Brasileira** - Datas, horários e calendário em português
+- [x] **Gestão de Turmas** - CRUD de turmas com geração de código
+- [x] **Módulo de Professores (parcialmente concluído)** - CRUD de Professores, validações (CPF/Telefone), formulário de endereço, DatePicker em pt-BR, filtros básicos e integração inicial com serviço
 
-**🔄 EM DESENVOLVIMENTO:**
-- [x] Cadastro de Turmas e Séries
-- [ ] Módulo de Professores
+**🔄 EM DESENVOLVIMENTO / PENDÊNCIAS:**
+- [ ] Vincular Professores às Turmas (atribuição / lotação / papel: titular/substituto)
 - [ ] Matrícula de Alunos
 - [ ] Diário de Classe
-
-**📋 PRÓXIMAS ETAPAS:**
 - [ ] Controle de Frequência
-- [ ] Lançamento de Notas
-- [ ] Boletins Escolares
+- [ ] Lançamento de Notas e Boletins
 - [ ] Relatórios e Estatísticas
+
+**📋 PRÓXIMAS ETAPAS IMEDIATAS (Professores)**
+- Implementar associação Professores <-> Turmas (ver recomendação abaixo)
+- Adicionar UI de atribuição de professor em TurmaForm e visualização de turmas vinculadas no ProfessorView
+- Testes automatizados (unit e integração) para services de Professor/Turma
+- Migrações DB (Flyway/Liquibase) se for necessário manter histórico de dados
+- Pequenas melhorias UX: máscara em tempo real (CPF/Telefone), paginação/ordenação na grid, export CSV/PDF
 
 ## 🛠️ Tecnologias Utilizadas
 
@@ -42,6 +47,5 @@ Sistema completo de gestão escolar desenvolvido em Java com Spring Boot e Vaadi
 
 1. **Clone o repositório:**
    ```bash
-   git clone https://github.com/seu-usuario/sistema-gestao-escolar.git
-   cd sistema-gestao-escolar
-   
+   git clone https://github.com/LeoNunesF/gestao_escolar.git
+   cd gestao_escolar

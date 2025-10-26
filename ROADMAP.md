@@ -18,7 +18,7 @@ Este documento apresenta o plano de desenvolvimento do sistema de gestão escola
 
 ## 🚧 Em andamento
 
-- [ ] CRUD de professores
+- [x] CRUD de professores
 - [ ] Integração de professores com turmas (atribuição)
 - [ ] Atualização do README e documentação técnica
 - [ ] Refatoração de views para melhor organização
