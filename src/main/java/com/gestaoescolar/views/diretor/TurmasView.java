@@ -151,6 +151,8 @@ public class TurmasView extends VerticalLayout {
         grid.getColumns().forEach(col -> col.setResizable(true));
         grid.setSelectionMode(Grid.SelectionMode.NONE);
 
+
+
     }
 
     private String formatarProfessoresAtribuidos(Long turmaId) {
@@ -220,4 +222,5 @@ public class TurmasView extends VerticalLayout {
     private void showError(String mensagem) {
         getUI().ifPresent(ui -> ui.getPage().executeJs("alert($0)", mensagem));
     }
+    
 }

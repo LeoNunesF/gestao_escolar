@@ -130,11 +130,11 @@ public class ProfessorView extends VerticalLayout {
 
     private void configureGrid() {
         grid.removeAllColumns();
-        grid.addColumn(Professor::getNomeCompleto).setHeader("Nome").setAutoWidth(true);
-        grid.addColumn(Professor::getCpf).setHeader("CPF").setAutoWidth(true);
-        grid.addColumn(Professor::getEmail).setHeader("Email").setAutoWidth(true);
-        grid.addColumn(Professor::getTelefone).setHeader("Telefone").setAutoWidth(true);
-        grid.addColumn(Professor::getFormacao).setHeader("Formação").setAutoWidth(true);
+        grid.addColumn(Professor::getNomeCompleto).setHeader("Nome").setAutoWidth(true).setSortable(true);
+        grid.addColumn(Professor::getCpf).setHeader("CPF").setAutoWidth(true).setSortable(true);;
+        grid.addColumn(Professor::getEmail).setHeader("Email").setAutoWidth(true).setSortable(true);
+        grid.addColumn(Professor::getTelefone).setHeader("Telefone").setAutoWidth(true).setSortable(true);
+        grid.addColumn(Professor::getFormacao).setHeader("Formação").setAutoWidth(true).setSortable(true);
         grid.addColumn(prof -> prof.isAtivo() ? "Sim" : "Não").setHeader("Ativo").setAutoWidth(true);
 
         grid.addComponentColumn(prof -> {
@@ -159,6 +159,8 @@ public class ProfessorView extends VerticalLayout {
         grid.asSingleSelect().addValueChangeListener(event -> editProfessor(event.getValue()));
     }
 
+    // exibir turma cadastradas por professor
+
     private void openTurmasDialog(Professor professor) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Turmas atribuídas a " + professor.getNomeCompleto());
@@ -168,7 +170,7 @@ public class ProfessorView extends VerticalLayout {
         dialog.setResizable(true);
 
         List<VinculoProfessorTurmaDTO> rows =
-                professorTurmaService.listVinculosResumoByProfessor(professor.getId());
+                professorTurmaService.listAssignmentSummariesByProfessor(professor.getId());
 
         if (rows == null || rows.isEmpty()) {
             dialog.add(new H3("Nenhuma turma atribuída."));

@@ -12,16 +12,19 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.TextField;
 
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 
 /**
  * Diálogo para atribuir um Professor a uma Turma.
- * CORREÇÃO: usar o Usuario logado ao consultar o ProfessorService (evita SecurityException).
+ * Simplificado: apenas avisa (mensagem visual) se já existir Titular no período.
+ * Não bloqueia, não muda o papel automaticamente. O service continua validando as regras.
  */
 public class AssignProfessorDialog extends Dialog {
 
@@ -38,6 +41,9 @@ public class AssignProfessorDialog extends Dialog {
     private final Button salvar = new Button("Salvar");
     private final Button cancelar = new Button("Cancelar");
 
+    // Aviso sobre disponibilidade do titular
+    private final Span infoTitular = new Span();
+
     public AssignProfessorDialog(Turma turma,
                                  ProfessorService professorService,
                                  ProfessorTurmaService professorTurmaService,
@@ -53,7 +59,10 @@ public class AssignProfessorDialog extends Dialog {
         configurarCampos();
         configurarDatePickersPtBR();
         createLayout();
-        carregarProfessores(); // usa usuarioLogado corretamente
+        carregarProfessores();
+
+        // Mostra/oculta o aviso de titular no carregamento inicial
+        atualizarAvisoTitular();
     }
 
     private void configurarCampos() {
@@ -66,8 +75,17 @@ public class AssignProfessorDialog extends Dialog {
         papelCombo.setItems(ProfessorTurma.Papel.values());
         papelCombo.setValue(ProfessorTurma.Papel.TITULAR);
 
+        // Observa mudanças para atualizar apenas o aviso (sem bloquear)
+        papelCombo.addValueChangeListener(e -> atualizarAvisoTitular());
+        dataInicio.addValueChangeListener(e -> atualizarAvisoTitular());
+        dataTermino.addValueChangeListener(e -> atualizarAvisoTitular());
+
         salvar.addClickListener(e -> onSalvar());
         cancelar.addClickListener(e -> close());
+
+        // Aparência do aviso
+        infoTitular.getElement().getThemeList().add("badge error");
+        infoTitular.setVisible(false);
     }
 
     private void configurarDatePickersPtBR() {
@@ -95,7 +113,9 @@ public class AssignProfessorDialog extends Dialog {
 
     private void createLayout() {
         FormLayout form = new FormLayout();
-        form.add(professorCombo, papelCombo, disciplina, dataInicio, dataTermino, salvar, cancelar);
+        // Coloca o aviso logo abaixo do campo de Papel
+        form.add(professorCombo, papelCombo, infoTitular, disciplina, dataInicio, dataTermino, salvar, cancelar);
+        form.setColspan(infoTitular, 2);
         add(form);
     }
 
@@ -128,8 +148,19 @@ public class AssignProfessorDialog extends Dialog {
         }
         ProfessorTurma.Papel papel = papelCombo.getValue();
         String disc = disciplina.getValue();
-        java.time.LocalDate inicio = dataInicio.getValue();
-        java.time.LocalDate termino = dataTermino.getValue();
+        LocalDate inicio = dataInicio.getValue();
+        LocalDate termino = dataTermino.getValue();
+
+        // Validação simples no cliente: início <= término
+        if (inicio != null && termino != null && inicio.isAfter(termino)) {
+            Notification.show("Data de início não pode ser posterior à data de término.", 3500, Notification.Position.MIDDLE);
+            return;
+        }
+
+        // Apenas informa (não bloqueia). O service aplicará as regras definitivas.
+        if (papel == ProfessorTurma.Papel.TITULAR && existeTitularNoPeriodoSelecionado()) {
+            Notification.show("Atenção: já existe professor titular para a turma no período informado. Revise o papel ou o período se desejar trocar.", 4500, Notification.Position.MIDDLE);
+        }
 
         try {
             professorTurmaService.assignProfessorToTurma(
@@ -152,6 +183,33 @@ public class AssignProfessorDialog extends Dialog {
         } catch (Exception ex) {
             Notification.show("Erro ao atribuir: " + ex.getMessage(), 4000, Notification.Position.MIDDLE);
         }
+    }
+
+    // ===================== Aviso de titular =====================
+
+    private void atualizarAvisoTitular() {
+        boolean mostrarAviso = papelCombo.getValue() == ProfessorTurma.Papel.TITULAR
+                && existeTitularNoPeriodoSelecionado();
+        infoTitular.setText(mostrarAviso
+                ? "Já existe professor titular para a turma no período selecionado."
+                : "");
+        infoTitular.setVisible(mostrarAviso);
+    }
+
+    private boolean existeTitularNoPeriodoSelecionado() {
+        LocalDate inicioSel = dataInicio.getValue();
+        LocalDate terminoSel = dataTermino.getValue();
+        return professorTurmaService.listByTurma(turma.getId()).stream()
+                .filter(pt -> pt.getPapel() == ProfessorTurma.Papel.TITULAR)
+                .anyMatch(pt -> periodOverlap(inicioSel, terminoSel, pt.getDataInicio(), pt.getDataTermino()));
+    }
+
+    private boolean periodOverlap(LocalDate aStart, LocalDate aEnd, LocalDate bStart, LocalDate bEnd) {
+        LocalDate as = aStart != null ? aStart : LocalDate.MIN;
+        LocalDate ae = aEnd != null ? aEnd : LocalDate.MAX;
+        LocalDate bs = bStart != null ? bStart : LocalDate.MIN;
+        LocalDate be = bEnd != null ? bEnd : LocalDate.MAX;
+        return !ae.isBefore(bs) && !be.isBefore(as);
     }
 
     private String formatCpf(String input) {
