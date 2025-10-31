@@ -11,6 +11,7 @@ import com.gestaoescolar.service.auth.AuthService;
 import com.gestaoescolar.service.escola.ProfessorService;
 import com.gestaoescolar.service.escola.ProfessorTurmaService;
 import com.gestaoescolar.service.escola.TurmaService;
+import com.gestaoescolar.service.escola.EnrollmentService; // ADICIONE ESTE IMPORT
 import com.gestaoescolar.views.components.AssignProfessorDialog;
 import com.gestaoescolar.views.shared.MainLayout;
 import com.vaadin.flow.component.button.Button;
@@ -26,6 +27,7 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -42,6 +44,8 @@ public class TurmasView extends VerticalLayout {
     private final ProfessorService professorService;
     private final ProfessorTurmaService professorTurmaService;
 
+    private final EnrollmentService enrollmentService; // ADICIONE ESTE CAMPO
+
     private final Grid<Turma> grid = new Grid<>(Turma.class);
     private final TextField filterText = new TextField();
     private final ComboBox<AnoLetivo> filterAnoLetivo = new ComboBox<>();
@@ -49,17 +53,20 @@ public class TurmasView extends VerticalLayout {
     private final ComboBox<Turno> filterTurno = new ComboBox<>();
     private final ComboBox<Boolean> filterAtiva = new ComboBox<>();
 
+    // AJUSTE O CONSTRUTOR PARA RECEBER enrollmentService
     public TurmasView(TurmaService turmaService,
                       AnoLetivoService anoLetivoService,
                       AuthService authService,
                       ProfessorService professorService,
-                      ProfessorTurmaService professorTurmaService) {
+                      ProfessorTurmaService professorTurmaService,
+                      EnrollmentService enrollmentService) { // <- novo parâmetro
         this.turmaService = turmaService;
         this.anoLetivoService = anoLetivoService;
         this.authService = authService;
         this.usuarioLogado = authService.getUsuarioLogado();
         this.professorService = professorService;
         this.professorTurmaService = professorTurmaService;
+        this.enrollmentService = enrollmentService; // atribuição
 
         setSizeFull();
         setPadding(true);
@@ -196,7 +203,20 @@ public class TurmasView extends VerticalLayout {
             dialog.addDetachListener(dl -> updateList());
         });
 
-        layout.add(editButton, statusButton, assignButton);
+        // NOVO BOTÃO: "Alunos Matriculados"
+        Button matriculasButton = new Button("Alunos Matriculados", new Icon(VaadinIcon.USERS));
+        matriculasButton.addClickListener(e -> {
+            TurmaMatriculasDialog d = new TurmaMatriculasDialog(
+                    enrollmentService,
+                    turmaService,
+                    usuarioLogado,
+                    turma,
+                    this::updateList
+            );
+            d.open();
+        });
+
+        layout.add(editButton, statusButton, assignButton, matriculasButton);
         return layout;
     }
 

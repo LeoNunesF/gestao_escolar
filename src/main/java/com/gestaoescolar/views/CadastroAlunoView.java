@@ -1,7 +1,8 @@
 package com.gestaoescolar.views;
 
 import com.gestaoescolar.model.Aluno;
-import com.gestaoescolar.service.AlunoService;
+import com.gestaoescolar.service.escola.AlunoService;
+import com.gestaoescolar.views.diretor.AlunosView;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.datepicker.DatePicker;
@@ -14,8 +15,8 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
-@Route(value = "cadastro-aluno", layout = MainView.class)
-@PageTitle("Cadastro de Aluno | Gestão Escolar")
+//@Route(value = "cadastro-aluno", layout = MainView.class)
+//@PageTitle("Cadastro de Aluno | Gestão Escolar")
 public class CadastroAlunoView extends VerticalLayout {
 
     private final AlunoService alunoService;
@@ -73,16 +74,16 @@ public class CadastroAlunoView extends VerticalLayout {
             return;
         }
 
-        Aluno aluno = new Aluno();
-        aluno.setMatricula(matricula.getValue());
-        aluno.setNome(nome.getValue());
-        aluno.setDataNascimento(dataNascimento.getValue());
-        aluno.setTurma(turma.getValue());
-        aluno.setResponsavel(responsavel.getValue());
-        aluno.setTelefone(telefone.getValue());
-        aluno.setEmail(email.getValue());
+       // Aluno aluno = new Aluno();
+        //aluno.setMatricula(matricula.getValue());
+       // aluno.setNome(nome.getValue());
+       // aluno.setDataNascimento(dataNascimento.getValue());
+       // aluno.setTurma(turma.getValue());
+      //  aluno.setResponsavel(responsavel.getValue());
+      //  aluno.setTelefone(telefone.getValue());
+      //  aluno.setEmail(email.getValue());
 
-        alunoService.save(aluno);
+      //  alunoService.save(aluno);
 
         Notification.show("Aluno salvo com sucesso!", 3000, Notification.Position.MIDDLE);
         getUI().ifPresent(ui -> ui.navigate(AlunosView.class));
