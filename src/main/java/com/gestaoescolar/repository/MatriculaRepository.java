@@ -14,10 +14,11 @@ public interface MatriculaRepository extends JpaRepository<Matricula, Long> {
 
     boolean existsByAlunoIdAndTurmaIdAndStatus(Long alunoId, Long turmaId, MatriculaStatus status);
 
-    @EntityGraph(attributePaths = {"aluno", "turma"})
+    // Carrega aluno, turma e anoLetivo da turma para evitar LazyInitialization ao acessar turma.getAnoLetivo()
+    @EntityGraph(attributePaths = {"aluno", "turma", "turma.anoLetivo"})
     List<Matricula> findByTurmaId(Long turmaId);
 
-    @EntityGraph(attributePaths = {"aluno", "turma"})
+    @EntityGraph(attributePaths = {"aluno", "turma", "turma.anoLetivo"})
     List<Matricula> findByAlunoId(Long alunoId);
 
     Optional<Matricula> findByIdAndStatus(Long id, MatriculaStatus status);

@@ -119,14 +119,18 @@ public class AlunosView extends VerticalLayout {
 
         grid.addComponentColumn(a -> {
             Button editar = new Button("Editar", ev -> editAluno(a));
+            Button verMatriculas = new Button("Ver matrículas", ev -> {
+                AlunoMatriculasDialog dlg = new AlunoMatriculasDialog(
+                        enrollmentService,
+                        usuarioLogado,
+                        a
+                );
+                dlg.open();
+            });
             Button matricular = new Button("Matricular", ev -> {
                 MatricularAlunoDialog dlg = new MatricularAlunoDialog(
-                        // injete os serviços necessários
-                        // enrollmentService: precisamos referenciar via construtor da view
-                        // turmaService: idem
-                        // usuarioLogado: já temos na view
-                        enrollmentService, // ver observação abaixo
-                        turmaService,      // ver observação abaixo
+                        enrollmentService,
+                        turmaService,
                         usuarioLogado,
                         a.getId(),
                         this::updateList
@@ -142,7 +146,7 @@ public class AlunosView extends VerticalLayout {
                     Notification.show("Erro ao alterar status: " + ex.getMessage(), 4000, Notification.Position.MIDDLE);
                 }
             });
-            return new HorizontalLayout(editar, matricular, toggle);
+            return new HorizontalLayout(editar, verMatriculas, matricular, toggle);
         }).setHeader("Ações").setAutoWidth(true);
 
         grid.setSizeFull();
