@@ -26,7 +26,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-
+import com.gestaoescolar.service.escola.CurriculumService;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
@@ -43,6 +43,7 @@ public class TurmasView extends VerticalLayout {
 
     private final ProfessorService professorService;
     private final ProfessorTurmaService professorTurmaService;
+    private final CurriculumService curriculumService; // ADICIONE ESTE CAMPO
 
     private final EnrollmentService enrollmentService; // ADICIONE ESTE CAMPO
 
@@ -56,6 +57,7 @@ public class TurmasView extends VerticalLayout {
     // AJUSTE O CONSTRUTOR PARA RECEBER enrollmentService
     public TurmasView(TurmaService turmaService,
                       AnoLetivoService anoLetivoService,
+                      CurriculumService curriculumService, // <- novo parâmetro
                       AuthService authService,
                       ProfessorService professorService,
                       ProfessorTurmaService professorTurmaService,
@@ -67,6 +69,7 @@ public class TurmasView extends VerticalLayout {
         this.professorService = professorService;
         this.professorTurmaService = professorTurmaService;
         this.enrollmentService = enrollmentService; // atribuição
+        this.curriculumService = curriculumService; // atribuição
 
         setSizeFull();
         setPadding(true);
@@ -216,6 +219,19 @@ public class TurmasView extends VerticalLayout {
             d.open();
         });
 
+        // botão para gerir disciplinas na turma
+        Button disciplinasButton = new Button("Disciplinas", e -> {
+            TurmaDisciplinaDialog dlg = new TurmaDisciplinaDialog(
+                    curriculumService, // injete CurriculumService no construtor da view
+                    turmaService,
+                    professorService,
+                    turma,
+                    this::updateList
+            );
+            dlg.open();
+        });
+        layout.add(disciplinasButton);
+
         layout.add(editButton, statusButton, assignButton, matriculasButton);
         return layout;
     }
@@ -238,6 +254,7 @@ public class TurmasView extends VerticalLayout {
             showError("Erro ao alterar status: " + e.getMessage());
         }
     }
+
 
     private void showError(String mensagem) {
         getUI().ifPresent(ui -> ui.getPage().executeJs("alert($0)", mensagem));
