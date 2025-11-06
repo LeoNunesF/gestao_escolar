@@ -13,4 +13,6 @@ public interface TurmaDisciplinaRepository extends JpaRepository<TurmaDisciplina
 
     @EntityGraph(attributePaths = {"turma", "disciplina"})
     List<TurmaDisciplina> findByDisciplinaId(Long disciplinaId);
+    // NOVO: impedir inserir disciplina repetida na mesma turma
+    boolean existsByTurmaIdAndDisciplinaId(Long turmaId, Long disciplinaId);
 }

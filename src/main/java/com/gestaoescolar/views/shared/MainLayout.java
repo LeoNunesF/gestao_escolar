@@ -67,6 +67,7 @@ public class MainLayout extends AppLayout {
             tabs.add(criarTab(VaadinIcon.GROUP, "Turmas", TurmasView.class));
             tabs.add(criarTab(VaadinIcon.GROUP, "Professores", ProfessorView.class));
             tabs.add(criarTab(VaadinIcon.USER, "Alunos", AlunosView.class));
+            tabs.add(criarTab(VaadinIcon.BOOK,"Disciplinas", DisciplinaView.class));
         }
 
         if (usuarioLogado != null) {

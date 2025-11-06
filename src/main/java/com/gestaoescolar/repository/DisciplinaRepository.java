@@ -7,4 +7,7 @@ import java.util.Optional;
 
 public interface DisciplinaRepository extends JpaRepository<Disciplina, Long> {
     Optional<Disciplina> findByCodigo(String codigo);
+    // NOVO: busca/checagem ignorando maiúsculas/minúsculas
+    Optional<Disciplina> findByCodigoIgnoreCase(String codigo);
+    boolean existsByCodigoIgnoreCase(String codigo);
 }

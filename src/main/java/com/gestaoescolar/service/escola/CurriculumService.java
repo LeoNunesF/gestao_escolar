@@ -3,10 +3,12 @@ package com.gestaoescolar.service.escola;
 import com.gestaoescolar.model.*;
 import com.gestaoescolar.model.enums.DisciplinaPadrao;
 import com.gestaoescolar.repository.*;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class CurriculumService {
@@ -40,13 +42,32 @@ public class CurriculumService {
 
     @Transactional
     public Disciplina createOrUpdateDisciplina(Disciplina d) {
-        if (d.getCodigo() == null || d.getCodigo().isBlank()) {
-            throw new IllegalArgumentException("Código da disciplina é obrigatório");
+        if (d == null) throw new IllegalArgumentException("Dados da disciplina não informados.");
+        String codigo = d.getCodigo() != null ? d.getCodigo().trim() : "";
+        String nome = d.getNome() != null ? d.getNome().trim() : "";
+
+        if (codigo.isBlank()) throw new IllegalArgumentException("Código da disciplina é obrigatório.");
+        if (nome.isBlank()) throw new IllegalArgumentException("Nome da disciplina é obrigatório.");
+
+        // Verificação case-insensitive
+        var existenteCI = disciplinaRepository.findByCodigoIgnoreCase(codigo);
+        if (existenteCI.isPresent()) {
+            Disciplina existente = existenteCI.get();
+            // Se for criação (id null) ou se for edição trocando para um código que já pertence a outro id
+            if (d.getId() == null || !Objects.equals(existente.getId(), d.getId())) {
+                throw new IllegalArgumentException("Já existe uma disciplina com este código (ignora maiúsculas/minúsculas).");
+            }
         }
-        if (d.getNome() == null || d.getNome().isBlank()) {
-            throw new IllegalArgumentException("Nome da disciplina é obrigatório");
+
+        d.setCodigo(codigo); // salva código já aparado (sem espaços antes/depois)
+        d.setNome(nome);
+
+        try {
+            return disciplinaRepository.save(d);
+        } catch (DataIntegrityViolationException ex) {
+            // Fallback amigável para violação da constraint unique do banco
+            throw new IllegalArgumentException("Código de disciplina já utilizado. Escolha um código diferente.");
         }
-        return disciplinaRepository.save(d);
     }
 
     @Transactional
@@ -54,12 +75,12 @@ public class CurriculumService {
         disciplinaRepository.deleteById(id);
     }
 
-    // Importa disciplinas padrão (cria apenas as que não existem pelo código)
+    // Importa disciplinas padrão (cria apenas as que não existem pelo código - case-insensitive)
     @Transactional
     public int importAllDefaultDisciplines() {
         int created = 0;
         for (DisciplinaPadrao dp : DisciplinaPadrao.values()) {
-            boolean exists = disciplinaRepository.findByCodigo(dp.getCodigo()).isPresent();
+            boolean exists = disciplinaRepository.existsByCodigoIgnoreCase(dp.getCodigo());
             if (!exists) {
                 Disciplina d = new Disciplina();
                 d.setCodigo(dp.getCodigo());
@@ -79,8 +100,17 @@ public class CurriculumService {
 
     @Transactional
     public TurmaDisciplina addDisciplinaToTurma(Long turmaId, Long disciplinaId, Integer cargaHoraria) {
-        Turma t = turmaRepository.findById(turmaId).orElseThrow(() -> new IllegalArgumentException("Turma não encontrada"));
-        Disciplina d = disciplinaRepository.findById(disciplinaId).orElseThrow(() -> new IllegalArgumentException("Disciplina não encontrada"));
+        Turma t = turmaRepository.findById(turmaId)
+                .orElseThrow(() -> new IllegalArgumentException("Turma não encontrada."));
+        Disciplina d = disciplinaRepository.findById(disciplinaId)
+                .orElseThrow(() -> new IllegalArgumentException("Disciplina não encontrada."));
+
+        // Impede duplicidade na mesma turma (cheque simples)
+        boolean jaExiste = turmaDisciplinaRepository.existsByTurmaIdAndDisciplinaId(turmaId, disciplinaId);
+        if (jaExiste) {
+            String nomeDisc = d.getNome() != null ? d.getNome() : "Disciplina";
+            throw new IllegalArgumentException("Esta turma já possui a disciplina \"" + nomeDisc + "\".");
+        }
 
         TurmaDisciplina td = new TurmaDisciplina();
         td.setTurma(t);
@@ -103,9 +133,9 @@ public class CurriculumService {
     @Transactional
     public ProfessorTurmaDisciplina assignProfessorToTurmaDisciplina(Long turmaDisciplinaId, Long professorId, boolean titular) {
         TurmaDisciplina td = turmaDisciplinaRepository.findById(turmaDisciplinaId)
-                .orElseThrow(() -> new IllegalArgumentException("Vínculo turma-disciplina não encontrado"));
+                .orElseThrow(() -> new IllegalArgumentException("Vínculo turma-disciplina não encontrado."));
         Professor p = professorRepository.findById(professorId)
-                .orElseThrow(() -> new IllegalArgumentException("Professor não encontrado"));
+                .orElseThrow(() -> new IllegalArgumentException("Professor não encontrado."));
 
         ProfessorTurmaDisciplina ptd = new ProfessorTurmaDisciplina();
         ptd.setProfessor(p);
