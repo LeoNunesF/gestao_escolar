@@ -219,6 +219,17 @@ public class TurmasView extends VerticalLayout {
             d.open();
         });
 
+        // OFERTAS DISCIPLINAS EM LOTE
+        Button ofertarLote = new Button("Ofertar disciplinas (lote)", e -> {
+            TurmaOfertaDisciplinasDialog dlg = new TurmaOfertaDisciplinasDialog(
+                    curriculumService, // certifique-se de ter este campo injetado na view
+                    turma,
+                    this::updateList
+            );
+            dlg.open();
+        });
+        layout.add(ofertarLote);
+
         // botão para gerir disciplinas na turma
         Button disciplinasButton = new Button("Disciplinas", e -> {
             TurmaDisciplinaDialog dlg = new TurmaDisciplinaDialog(
