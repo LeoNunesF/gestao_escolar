@@ -243,8 +243,20 @@ public class TurmasView extends VerticalLayout {
         });
         layout.add(disciplinasButton);
 
+        // Aplicar GRADE
+        Button aplicarGrade = new Button("Aplicar grade", e -> {
+            TurmaAplicarGradeDialog dlg = new TurmaAplicarGradeDialog(
+                    curriculumService, // certifique-se de injetar o serviço na view
+                    turma,
+                    this::updateList
+            );
+            dlg.open();
+        });
+        layout.add(aplicarGrade);
+
         layout.add(editButton, statusButton, assignButton, matriculasButton);
         return layout;
+
     }
 
     private void updateList() {

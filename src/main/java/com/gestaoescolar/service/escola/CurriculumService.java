@@ -19,16 +19,23 @@ public class CurriculumService {
     private final TurmaRepository turmaRepository;
     private final ProfessorRepository professorRepository;
 
+    private final GradeCurricularRepository gradeCurricularRepository;
+    private final GradeCurricularItemRepository gradeCurricularItemRepository;
+
     public CurriculumService(DisciplinaRepository disciplinaRepository,
                              TurmaDisciplinaRepository turmaDisciplinaRepository,
                              ProfessorTurmaDisciplinaRepository professorTurmaDisciplinaRepository,
                              TurmaRepository turmaRepository,
-                             ProfessorRepository professorRepository) {
+                             ProfessorRepository professorRepository,
+                             GradeCurricularRepository gradeCurricularRepository,
+                             GradeCurricularItemRepository gradeCurricularItemRepository) {
         this.disciplinaRepository = disciplinaRepository;
         this.turmaDisciplinaRepository = turmaDisciplinaRepository;
         this.professorTurmaDisciplinaRepository = professorTurmaDisciplinaRepository;
         this.turmaRepository = turmaRepository;
         this.professorRepository = professorRepository;
+        this.gradeCurricularRepository = gradeCurricularRepository;
+        this.gradeCurricularItemRepository = gradeCurricularItemRepository;
     }
 
     // ===== Disciplinas =====
@@ -49,23 +56,20 @@ public class CurriculumService {
         if (codigo.isBlank()) throw new IllegalArgumentException("Código da disciplina é obrigatório.");
         if (nome.isBlank()) throw new IllegalArgumentException("Nome da disciplina é obrigatório.");
 
-        // Verificação case-insensitive
         var existenteCI = disciplinaRepository.findByCodigoIgnoreCase(codigo);
         if (existenteCI.isPresent()) {
             Disciplina existente = existenteCI.get();
-            // Se for criação (id null) ou se for edição trocando para um código que já pertence a outro id
             if (d.getId() == null || !Objects.equals(existente.getId(), d.getId())) {
                 throw new IllegalArgumentException("Já existe uma disciplina com este código (ignora maiúsculas/minúsculas).");
             }
         }
 
-        d.setCodigo(codigo); // salva código já aparado (sem espaços antes/depois)
+        d.setCodigo(codigo);
         d.setNome(nome);
 
         try {
             return disciplinaRepository.save(d);
         } catch (DataIntegrityViolationException ex) {
-            // Fallback amigável para violação da constraint unique do banco
             throw new IllegalArgumentException("Código de disciplina já utilizado. Escolha um código diferente.");
         }
     }
@@ -75,7 +79,6 @@ public class CurriculumService {
         disciplinaRepository.deleteById(id);
     }
 
-    // Importa disciplinas padrão (cria apenas as que não existem pelo código - case-insensitive)
     @Transactional
     public int importAllDefaultDisciplines() {
         int created = 0;
@@ -105,7 +108,6 @@ public class CurriculumService {
         Disciplina d = disciplinaRepository.findById(disciplinaId)
                 .orElseThrow(() -> new IllegalArgumentException("Disciplina não encontrada."));
 
-        // Impede duplicidade na mesma turma (cheque simples)
         boolean jaExiste = turmaDisciplinaRepository.existsByTurmaIdAndDisciplinaId(turmaId, disciplinaId);
         if (jaExiste) {
             String nomeDisc = d.getNome() != null ? d.getNome() : "Disciplina";
@@ -125,7 +127,6 @@ public class CurriculumService {
         turmaDisciplinaRepository.deleteById(turmaDisciplinaId);
     }
 
-    // ===== ProfessorTurmaDisciplina =====
     public List<ProfessorTurmaDisciplina> listProfessoresByTurmaDisciplina(Long turmaDisciplinaId) {
         return professorTurmaDisciplinaRepository.findByTurmaDisciplinaId(turmaDisciplinaId);
     }
@@ -147,5 +148,58 @@ public class CurriculumService {
     @Transactional
     public void unassignProfessor(Long professorTurmaDisciplinaId) {
         professorTurmaDisciplinaRepository.deleteById(professorTurmaDisciplinaId);
+    }
+
+    // ===== Grade Curricular =====
+    public List<GradeCurricular> listGrades() {
+        return gradeCurricularRepository.findAll();
+    }
+
+    public List<GradeCurricularItem> listGradeItems(Long gradeId) {
+        return gradeCurricularItemRepository.findByGradeId(gradeId);
+    }
+
+    @Transactional
+    public GradeCurricular createOrUpdateGrade(GradeCurricular g) {
+        if (g == null) throw new IllegalArgumentException("Dados da grade não informados.");
+        String nome = g.getNome() != null ? g.getNome().trim() : "";
+        if (nome.isBlank()) throw new IllegalArgumentException("Nome da grade é obrigatório.");
+
+        var existente = gradeCurricularRepository.findByNomeIgnoreCase(nome);
+        if (existente.isPresent() && (g.getId() == null || !Objects.equals(existente.get().getId(), g.getId()))) {
+            throw new IllegalArgumentException("Já existe uma grade com este nome.");
+        }
+
+        g.setNome(nome);
+        return gradeCurricularRepository.save(g);
+    }
+
+    @Transactional
+    public void deleteGrade(Long gradeId) {
+        gradeCurricularRepository.deleteById(gradeId);
+    }
+
+    @Transactional
+    public GradeCurricularItem addItemToGrade(Long gradeId, Long disciplinaId, Integer cargaHoraria) {
+        GradeCurricular grade = gradeCurricularRepository.findById(gradeId)
+                .orElseThrow(() -> new IllegalArgumentException("Grade não encontrada."));
+        Disciplina d = disciplinaRepository.findById(disciplinaId)
+                .orElseThrow(() -> new IllegalArgumentException("Disciplina não encontrada."));
+
+        boolean existe = gradeCurricularItemRepository.existsByGradeIdAndDisciplinaId(gradeId, disciplinaId);
+        if (existe) {
+            throw new IllegalArgumentException("Esta grade já possui a disciplina \"" + (d.getNome() != null ? d.getNome() : "Disciplina") + "\".");
+        }
+
+        GradeCurricularItem item = new GradeCurricularItem();
+        item.setGrade(grade);
+        item.setDisciplina(d);
+        item.setCargaHoraria(cargaHoraria);
+        return gradeCurricularItemRepository.save(item);
+    }
+
+    @Transactional
+    public void removeItemFromGrade(Long itemId) {
+        gradeCurricularItemRepository.deleteById(itemId);
     }
 }
