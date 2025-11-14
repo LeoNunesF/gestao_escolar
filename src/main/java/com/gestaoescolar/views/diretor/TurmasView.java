@@ -28,6 +28,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.gestaoescolar.service.escola.CurriculumService;
 import java.time.format.DateTimeFormatter;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -44,7 +45,7 @@ public class TurmasView extends VerticalLayout {
     private final ProfessorService professorService;
     private final ProfessorTurmaService professorTurmaService;
     private final CurriculumService curriculumService; // ADICIONE ESTE CAMPO
-
+    private final com.gestaoescolar.service.escola.AcademicPolicyService academicPolicyService;
     private final EnrollmentService enrollmentService; // ADICIONE ESTE CAMPO
 
     private final Grid<Turma> grid = new Grid<>(Turma.class);
@@ -57,11 +58,13 @@ public class TurmasView extends VerticalLayout {
     // AJUSTE O CONSTRUTOR PARA RECEBER enrollmentService
     public TurmasView(TurmaService turmaService,
                       AnoLetivoService anoLetivoService,
-                      CurriculumService curriculumService, // <- novo parâmetro
+                      //CurriculumService curriculumService, // <- novo parâmetro
                       AuthService authService,
                       ProfessorService professorService,
                       ProfessorTurmaService professorTurmaService,
-                      EnrollmentService enrollmentService) { // <- novo parâmetro
+                      EnrollmentService enrollmentService,
+                      com.gestaoescolar.service.escola.CurriculumService curriculumService,
+                      com.gestaoescolar.service.escola.AcademicPolicyService academicPolicyService) { // <- novo parâmetro
         this.turmaService = turmaService;
         this.anoLetivoService = anoLetivoService;
         this.authService = authService;
@@ -70,6 +73,7 @@ public class TurmasView extends VerticalLayout {
         this.professorTurmaService = professorTurmaService;
         this.enrollmentService = enrollmentService; // atribuição
         this.curriculumService = curriculumService; // atribuição
+        this.academicPolicyService = academicPolicyService;
 
         setSizeFull();
         setPadding(true);
@@ -252,10 +256,22 @@ public class TurmasView extends VerticalLayout {
             );
             dlg.open();
         });
+        //Botão Politica da Turma
+        Button politicaTurma = new Button("Política da Turma", e -> {
+            TurmaPolicyDialog dlg = new TurmaPolicyDialog(
+                    academicPolicyService,
+                    turma,
+                    this::updateList
+            );
+            dlg.open();
+        });
+        layout.add(politicaTurma);
+
         layout.add(aplicarGrade);
 
         layout.add(editButton, statusButton, assignButton, matriculasButton);
         return layout;
+
 
     }
 

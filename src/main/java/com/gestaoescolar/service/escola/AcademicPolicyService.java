@@ -1,15 +1,15 @@
 package com.gestaoescolar.service.escola;
 
 import com.gestaoescolar.model.*;
+import com.gestaoescolar.model.enums.EvaluationScaleType;
 import com.gestaoescolar.model.enums.PeriodType;
-import com.gestaoescolar.repository.AcademicPeriodRepository;
-import com.gestaoescolar.repository.AcademicPolicyRepository;
-import com.gestaoescolar.repository.AnoLetivoRepository;
+import com.gestaoescolar.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class AcademicPolicyService {
@@ -18,13 +18,22 @@ public class AcademicPolicyService {
     private final AcademicPeriodRepository periodRepo;
     private final AnoLetivoRepository anoLetivoRepo;
 
+    private final TurmaRepository turmaRepository;
+    private final TurmaPolicyOverrideRepository turmaOverrideRepo;
+
     public AcademicPolicyService(AcademicPolicyRepository policyRepo,
                                  AcademicPeriodRepository periodRepo,
-                                 AnoLetivoRepository anoLetivoRepo) {
+                                 AnoLetivoRepository anoLetivoRepo,
+                                 TurmaRepository turmaRepository,
+                                 TurmaPolicyOverrideRepository turmaOverrideRepo) {
         this.policyRepo = policyRepo;
         this.periodRepo = periodRepo;
         this.anoLetivoRepo = anoLetivoRepo;
+        this.turmaRepository = turmaRepository;
+        this.turmaOverrideRepo = turmaOverrideRepo;
     }
+
+    // ===== Base (Ano Letivo) =====
 
     @Transactional
     public AcademicPolicy getOrCreatePolicy(Long anoLetivoId) {
@@ -35,18 +44,18 @@ public class AcademicPolicyService {
             p.setAnoLetivo(ano);
             p.setPeriodType(PeriodType.BIMESTRE);
             p.setTotalPeriods(4);
+            p.setEvaluationScaleType(com.gestaoescolar.model.enums.EvaluationScaleType.NUMERICA);
             p.setScaleMin(0.0);
             p.setScaleMax(10.0);
             p.setDecimalPrecision(1);
             p.setMinAverageForApproval(6.0);
             p.setMinAttendancePercent(75);
             p = policyRepo.save(p);
-            regenerateDefaultPeriods(p.getId()); // cria 4 bimestres com nomes
+            regenerateDefaultPeriods(p.getId());
             return p;
         });
     }
 
-    // SUBSTITUA APENAS ESTE MÉTODO
     @Transactional
     public AcademicPolicy savePolicy(AcademicPolicy updated) {
         if (updated.getAnoLetivo() == null || updated.getAnoLetivo().getId() == null) {
@@ -55,28 +64,21 @@ public class AcademicPolicyService {
         AcademicPolicy current = policyRepo.findByAnoLetivoId(updated.getAnoLetivo().getId())
                 .orElseThrow(() -> new IllegalArgumentException("Política não encontrada para o ano letivo."));
 
-        // Escala (numérica x conceitual)
         current.setEvaluationScaleType(updated.getEvaluationScaleType());
         current.setConceptLabels(updated.getConceptLabels());
 
-        // Periodicidade
         current.setPeriodType(updated.getPeriodType());
         current.setTotalPeriods(updated.getTotalPeriods() != null ? updated.getTotalPeriods()
                 : (updated.getPeriodType() == PeriodType.BIMESTRE ? 4 : 3));
 
-        // Configs numéricas (aplicam-se quando escala NUMÉRICA)
         current.setScaleMin(updated.getScaleMin());
         current.setScaleMax(updated.getScaleMax());
         current.setDecimalPrecision(updated.getDecimalPrecision());
         current.setRoundingMode(updated.getRoundingMode());
         current.setMinAverageForApproval(updated.getMinAverageForApproval());
+        current.setMinAttendancePercent(updated.getMinAttendancePercent());
         current.setEvaluationWeighting(updated.getEvaluationWeighting());
         current.setTotalPointsPerPeriod(updated.getTotalPointsPerPeriod());
-
-        // Frequência mínima (sempre aplicável)
-        current.setMinAttendancePercent(updated.getMinAttendancePercent());
-
-        // Regra de recuperação (por ora mantemos visível apenas para escala numérica)
         current.setRecoveryRule(updated.getRecoveryRule());
 
         return policyRepo.save(current);
@@ -86,7 +88,6 @@ public class AcademicPolicyService {
     public void regenerateDefaultPeriods(Long policyId) {
         AcademicPolicy p = policyRepo.findById(policyId)
                 .orElseThrow(() -> new IllegalArgumentException("Política acadêmica não encontrada."));
-        // Remove existentes
         List<AcademicPeriod> existing = periodRepo.findByPolicyIdOrderByIndexNumberAsc(policyId);
         periodRepo.deleteAll(existing);
 
@@ -116,5 +117,39 @@ public class AcademicPolicyService {
 
     public List<AcademicPeriod> listPeriods(Long policyId) {
         return periodRepo.findByPolicyIdOrderByIndexNumberAsc(policyId);
+    }
+
+    // ===== Overrides por Turma =====
+
+    public Optional<TurmaPolicyOverride> getOverrideForTurma(Long turmaId) {
+        return turmaOverrideRepo.findByTurmaId(turmaId);
+    }
+
+    @Transactional
+    public TurmaPolicyOverride saveTurmaOverride(Long turmaId, EvaluationScaleType scaleType, String conceptLabels) {
+        Turma turma = turmaRepository.findById(turmaId)
+                .orElseThrow(() -> new IllegalArgumentException("Turma não encontrada."));
+        TurmaPolicyOverride ov = turmaOverrideRepo.findByTurmaId(turmaId).orElseGet(TurmaPolicyOverride::new);
+        ov.setTurma(turma);
+        ov.setEvaluationScaleType(scaleType);
+        ov.setConceptLabels(conceptLabels);
+        return turmaOverrideRepo.save(ov);
+    }
+
+    @Transactional
+    public void removeTurmaOverride(Long turmaId) {
+        turmaOverrideRepo.deleteByTurmaId(turmaId);
+    }
+
+    @Transactional(readOnly = true)
+    public EffectiveAcademicPolicy getEffectivePolicyForTurma(Long turmaId) {
+        Turma turma = turmaRepository.findById(turmaId)
+                .orElseThrow(() -> new IllegalArgumentException("Turma não encontrada."));
+        Long anoId = turma.getAnoLetivo() != null ? turma.getAnoLetivo().getId() : null;
+        if (anoId == null) throw new IllegalArgumentException("Turma sem ano letivo associado.");
+
+        AcademicPolicy base = getOrCreatePolicy(anoId);
+        TurmaPolicyOverride ov = turmaOverrideRepo.findByTurmaId(turmaId).orElse(null);
+        return EffectiveAcademicPolicy.from(base, ov);
     }
 }
